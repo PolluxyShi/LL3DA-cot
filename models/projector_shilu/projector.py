@@ -12,13 +12,13 @@ class projector(nn.Module):
                 param.requires_grad = False
         return self
 
-    def __init__(self, args, in_channels, out_channels, mlp_depth):
+    def __init__(self, args, train_dataset):
         self.freeze_llm = args.freeze_llm
         self.dtype = torch.float16
 
-        self.in_channels = in_channels
-        self.out_channels = out_channels
-        self.mlp_depth = mlp_depth
+        self.in_channels = ?
+        self.out_channels = ?
+        self.mlp_depth = ?
         self.hidden_size = [1024 * 2 ** i for i in range(mlp_depth)]
 
         self.box_prompt_projector = self.set_proj()
@@ -57,6 +57,8 @@ class projector(nn.Module):
 
             box_prompt = self.box_prompt_projector(box_prompt)
 
+            detector_output.update({'box_prompt': box_prompt})
+
             if not is_eval:
                 # 获取文本嵌入
                 think_text_ids = inputs.get('think_text_ids', None)
@@ -66,14 +68,10 @@ class projector(nn.Module):
                 # 计算对比损失
                 loss = self.compute_contrastive_loss(box_prompt, text_embedding)
 
-                # 返回结果
-                return {
-                    'box_prompt': box_prompt,
-                    'text_embedding': text_embedding,
-                    'loss': loss
-                }
+                # 更新 detector_output
+                detector_output['loss'] += loss
 
-            return {'box_prompt': box_prompt}
+        return detector_output
         
     def compute_contrastive_loss(self, z3D: Tensor, ztext: Tensor) -> Tensor:
         """
